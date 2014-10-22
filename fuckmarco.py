@@ -10,6 +10,7 @@ class Marco:
 	cj = cookielib.CookieJar()
 	http = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
 	params = {}
+	scrap = None
 	
 	def login(self, username, password):
 		response = self.http.open('https://marco.ms.dendai.ac.jp/PTDU79130R/AX0101.aspx')
@@ -144,13 +145,30 @@ class Marco:
 		self.http.addheaders = [('Referer', 'https://marco.ms.dendai.ac.jp/ReportServer/Pages/ReportViewer.aspx?/PTDU79130R/report_GSY0205'), ('User-Agent', 'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.124 Safari/537.36')]
 		response = self.http.open('https://marco.ms.dendai.ac.jp/ReportServer/Pages/ReportViewer.aspx?%2fPTDU79130R%2freport_GSY0205', step5params)
 		html = response.read()
+		soup = BeautifulSoup(html)
+		self.scrap = soup.findAll("tr", valign="top")
 		return html
-		#soup = BeautifulSoup(html)
-		#print soup
 
+	#scrapをごにょごにょしてデータをぶっこ抜くメソッド
+	def datascrapper(self):
 		
-		#for x in tables:
-		#	print x
+		for val in self.scrap[3].findAll("div"):
+			if "館" in val.string:
+				hex_num = val["class"]
+				break
+
+		for index,val in enumerate(self.scrap[3].findAll("div")):
+			if val["class"] == hex_num:
+				try:
+					data = self.scrap[3].findAll("div")[index-2].string
+					time = self.scrap[3].findAll("div")[index-1].string
+					where = val.string
+				except:
+					data = "None"
+					time = "None"
+					where = "None"
+				print "%s - %s - %s"%(data,time,where)
+				print "-------------------"
 
 if __name__ == '__main__':
 	setting_txt = open('setting.yaml', 'r').read().decode('utf-8')
@@ -160,6 +178,7 @@ if __name__ == '__main__':
 	marco = Marco()
 	marco.login(username, password)
 	html = marco.getreport()
+	marco.datascrapper() #データぶっこ抜き
 	f = open('marco.txt', 'w')
 	f.write(html)
 	f.close()
